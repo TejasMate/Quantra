@@ -1,0 +1,87 @@
+[
+  {
+    "kycId": "kyc_1757775815221_5hyygygwi",
+    "merchantId": "test-merchant-001",
+    "merchantAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "businessName": "Test Cafe",
+    "businessType": "food",
+    "region": "Asia",
+    "kycLevel": 2,
+    "documentHashes": [
+      "doc1hash",
+      "doc2hash",
+      "doc3hash",
+      "doc4hash"
+    ],
+    "verificationStatus": "approved",
+    "kycDoerAddress": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+    "submittedAt": 1757775815221,
+    "expiresAt": 1819983815221,
+    "complianceChecks": {
+      "amlCheck": true,
+      "sanctionsCheck": true,
+      "businessVerification": true,
+      "documentVerification": true,
+      "geopoliticalCheck": true
+    },
+    "daoApprovalRequired": false,
+    "reviewedAt": 1757775819762
+  },
+  {
+    "kycId": "kyc_1757775833394_ylzenflrt",
+    "merchantId": "test-merchant-premium",
+    "merchantAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "businessName": "Premium Corp",
+    "businessType": "technology",
+    "region": "Global",
+    "kycLevel": 3,
+    "documentHashes": [
+      "doc1hash",
+      "doc2hash",
+      "doc3hash",
+      "doc4hash",
+      "doc5hash",
+      "doc6hash"
+    ],
+    "verificationStatus": "pending",
+    "kycDoerAddress": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+    "submittedAt": 1757775833394,
+    "expiresAt": 1851087833394,
+    "complianceChecks": {
+      "amlCheck": true,
+      "sanctionsCheck": true,
+      "businessVerification": true,
+      "documentVerification": true,
+      "geopoliticalCheck": true
+    },
+    "daoApprovalRequired": true,
+    "daoApprovalStatus": "pending",
+    "reviewedAt": 1757777596386
+  },
+  {
+    "kycId": "kyc_1757777531854_e840x8v8o",
+    "merchantId": "final-test-merchant",
+    "merchantAddress": "0x85317C592B6841154a308b9e54af3b0A55FfeDEa",
+    "businessName": "Final Test Restaurant",
+    "businessType": "food",
+    "region": "Asia",
+    "kycLevel": 1,
+    "documentHashes": [
+      "finaldoc1",
+      "finaldoc2"
+    ],
+    "verificationStatus": "rejected",
+    "kycDoerAddress": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199",
+    "submittedAt": 1757777531855,
+    "expiresAt": 1788881531855,
+    "complianceChecks": {
+      "amlCheck": false,
+      "sanctionsCheck": true,
+      "businessVerification": true,
+      "documentVerification": true,
+      "geopoliticalCheck": true
+    },
+    "daoApprovalRequired": false,
+    "reviewedAt": 1757777536394
+  }
+]

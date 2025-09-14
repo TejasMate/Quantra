@@ -1,0 +1,244 @@
+{
+  "merchants": [
+    {
+      "merchantId": "1",
+      "escrowAddresses": {
+        "avalanche": [],
+        "aptos": [
+          "0x0000000000000000000000000000000000000000"
+        ],
+        "ethereum": [],
+        "polygon": [],
+        "localhost": [
+          "0x0000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000",
+          "0x0000000000000000000000000000000000000000",
+          "0x7E59013A9A663147A881552267e30a7aE389e131",
+          "0xf849f1F78Bab2E470C50c32F6e689Ce010c27441"
+        ]
+      },
+      "lastUpdated": "2025-09-12T18:38:23.162Z"
+    },
+    {
+      "merchantId": "CLI_TEST_001",
+      "escrowAddresses": {
+        "avalanche": [
+          "0xe220EC420B7410d5EeBdF5924C1860813B5Ff5C4",
+          "0x6B91B2ec3ebDFB6df6542061962DC6Bea0B9539B"
+        ],
+        "aptos": [
+          "0x46d961ad7ad5dce4b0e8a133f28ddf5c42b362b81c1acfd870b909413731a67a"
+        ],
+        "ethereum": [],
+        "polygon": [],
+        "localhost": []
+      },
+      "upiEscrows": [
+        {
+          "upiId": "test@cli-integration",
+          "escrows": {
+            "avalanche": {
+              "escrowId": "avalanche-test-cli-integration-CLI_TEST_001-1757756033705",
+              "contractAddress": "0xe220EC420B7410d5EeBdF5924C1860813B5Ff5C4",
+              "network": "avalanche-fuji",
+              "token": "AVAX",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0x90da0fd836c5371716b8c9b1db16f36d031e9549966d2bad11566fdb98194049",
+              "blockNumber": 45964235,
+              "gasUsed": "24544",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:33:53.706Z"
+            },
+            "aptos": {
+              "escrowId": "aptos-test-cli-integration-CLI_TEST_001-1757756035793",
+              "contractAddress": "0x46d961ad7ad5dce4b0e8a133f28ddf5c42b362b81c1acfd870b909413731a67a",
+              "network": "aptos-testnet",
+              "token": "APT",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0xdf2466b9a0cfd2eb37354c85156fb07c6fcf7f6854b8015ea1eec621257ab8e3",
+              "blockHeight": "6861914016",
+              "gasUsed": "551",
+              "gasFeeOctas": "551",
+              "gasFeeAPT": 0.00000551,
+              "explorerUrl": "https://explorer.aptoslabs.com/txn/0xdf2466b9a0cfd2eb37354c85156fb07c6fcf7f6854b8015ea1eec621257ab8e3?network=testnet",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:33:55.792Z"
+            }
+          },
+          "timestamp": "2025-09-13T09:33:43.477Z"
+        },
+        {
+          "upiId": "test@cli-integration",
+          "escrows": {
+            "avalanche": {
+              "escrowId": "avalanche-test-cli-integration-CLI_TEST_001-1757762475329",
+              "contractAddress": "0x6B91B2ec3ebDFB6df6542061962DC6Bea0B9539B",
+              "network": "avalanche-fuji",
+              "token": "AVAX",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0xaef5999980e9543d216f52417e4ddf0f029b8c74b74512f0a6bdf1c69366893f",
+              "blockNumber": 45966385,
+              "gasUsed": "24544",
+              "status": "deployed",
+              "timestamp": "2025-09-13T11:21:15.329Z"
+            },
+            "aptos": {
+              "escrowId": "aptos-test-cli-integration-CLI_TEST_001-1757762476738",
+              "contractAddress": "0x46d961ad7ad5dce4b0e8a133f28ddf5c42b362b81c1acfd870b909413731a67a",
+              "network": "aptos-testnet",
+              "token": "APT",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0x69f18b490f5c9d22bf7f221b3b82aa1a05330d55af8c0e4d0c07bae7c8a4e1dc",
+              "blockHeight": "6862020801",
+              "gasUsed": "18",
+              "gasFeeOctas": "18",
+              "gasFeeAPT": 1.8e-7,
+              "explorerUrl": "https://explorer.aptoslabs.com/txn/0x69f18b490f5c9d22bf7f221b3b82aa1a05330d55af8c0e4d0c07bae7c8a4e1dc?network=testnet",
+              "status": "deployed",
+              "timestamp": "2025-09-13T11:21:16.737Z"
+            }
+          },
+          "timestamp": "2025-09-13T11:21:04.455Z"
+        }
+      ],
+      "lastUpdated": "2025-09-13T11:21:16.742Z"
+    },
+    {
+      "merchantId": "MERCHANT_CLI_001",
+      "escrowAddresses": {
+        "avalanche": [
+          "0x861DDeCE40E452C11D43E926a734348cE41082D3",
+          "0x6281D3c2133A6c47cde5B5F00A42Cc6B3B8431fF"
+        ],
+        "aptos": [
+          "0x04d097bcea1e8fbf68ae537b61c920161b75388957c5162c1f5e95e8ae800757",
+          "0xb09c1d470ead1bb288cad6d3316e3d47320089c7bd5fe38b038d9d4afec5d607"
+        ],
+        "ethereum": [],
+        "polygon": [],
+        "localhost": []
+      },
+      "upiEscrows": [
+        {
+          "upiId": "merchant@cli-payment",
+          "escrows": {
+            "avalanche": {
+              "escrowId": "avalanche-merchant-cli-payment-MERCHANT_CLI_001-1757756052453",
+              "contractAddress": "0x861DDeCE40E452C11D43E926a734348cE41082D3",
+              "network": "avalanche-fuji",
+              "token": "AVAX",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0x2dc312aaf76c17909428a1cf168a289b4d41dbbf82f32b4cce0c7155cf17ad7b",
+              "blockNumber": 45964241,
+              "gasUsed": "24544",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:34:12.453Z"
+            },
+            "aptos": {
+              "escrowId": "aptos-merchant-cli-payment-MERCHANT_CLI_001-1757756053851",
+              "contractAddress": "0x04d097bcea1e8fbf68ae537b61c920161b75388957c5162c1f5e95e8ae800757",
+              "network": "aptos-testnet",
+              "token": "APT",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0x2c04c5bbbf59aecb0fd7852e0752e92cfcbc8c2e25f9342377d8a8dff62265a2",
+              "blockHeight": "6861914306",
+              "gasUsed": "551",
+              "gasFeeOctas": "551",
+              "gasFeeAPT": 0.00000551,
+              "explorerUrl": "https://explorer.aptoslabs.com/txn/0x2c04c5bbbf59aecb0fd7852e0752e92cfcbc8c2e25f9342377d8a8dff62265a2?network=testnet",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:34:13.850Z"
+            }
+          },
+          "timestamp": "2025-09-13T09:34:02.123Z"
+        },
+        {
+          "upiId": "business@payments",
+          "escrows": {
+            "avalanche": {
+              "escrowId": "avalanche-business-payments-MERCHANT_CLI_001-1757756084082",
+              "contractAddress": "0x6281D3c2133A6c47cde5B5F00A42Cc6B3B8431fF",
+              "network": "avalanche-fuji",
+              "token": "AVAX",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0xbdde2197bead2ab13ddf1f52e46674ddf6681dc9ac47628ced572be1ce0cd132",
+              "blockNumber": 45964252,
+              "gasUsed": "24496",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:34:44.083Z"
+            },
+            "aptos": {
+              "escrowId": "aptos-business-payments-MERCHANT_CLI_001-1757756085876",
+              "contractAddress": "0xb09c1d470ead1bb288cad6d3316e3d47320089c7bd5fe38b038d9d4afec5d607",
+              "network": "aptos-testnet",
+              "token": "APT",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0xaa0066b59e8a6623bd0d9dc2418cc758748551ebac232e98204c487fa0ca5134",
+              "blockHeight": "6861914817",
+              "gasUsed": "551",
+              "gasFeeOctas": "551",
+              "gasFeeAPT": 0.00000551,
+              "explorerUrl": "https://explorer.aptoslabs.com/txn/0xaa0066b59e8a6623bd0d9dc2418cc758748551ebac232e98204c487fa0ca5134?network=testnet",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:34:45.876Z"
+            }
+          },
+          "timestamp": "2025-09-13T09:34:28.926Z"
+        }
+      ],
+      "lastUpdated": "2025-09-13T09:34:45.882Z"
+    },
+    {
+      "merchantId": "MERCHANT_CLI_002",
+      "escrowAddresses": {
+        "avalanche": [
+          "0x6F0A61196203Efc32Fc8ceA2cD61b055cAB9D2E3"
+        ],
+        "aptos": [
+          "0x75392e9d9388860fadca2eb5469e38b6e93736f4192247c0a947c1b582443f4d"
+        ],
+        "ethereum": [],
+        "polygon": [],
+        "localhost": []
+      },
+      "upiEscrows": [
+        {
+          "upiId": "aptos@only",
+          "escrows": {
+            "avalanche": {
+              "escrowId": "avalanche-aptos-only-MERCHANT_CLI_002-1757756105831",
+              "contractAddress": "0x6F0A61196203Efc32Fc8ceA2cD61b055cAB9D2E3",
+              "network": "avalanche-fuji",
+              "token": "AVAX",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0xff9db667215bee87a6960f81d49fe1f93efe07afd590704e0d49cea0741f879a",
+              "blockNumber": 45964263,
+              "gasUsed": "24384",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:35:05.831Z"
+            },
+            "aptos": {
+              "escrowId": "aptos-aptos-only-MERCHANT_CLI_002-1757756107976",
+              "contractAddress": "0x75392e9d9388860fadca2eb5469e38b6e93736f4192247c0a947c1b582443f4d",
+              "network": "aptos-testnet",
+              "token": "APT",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "txHash": "0x530b7d4462bf2c6f88fbcbae38f00d2d1855409154a60f6f428edc2deb48c8e2",
+              "blockHeight": "6861915160",
+              "gasUsed": "551",
+              "gasFeeOctas": "551",
+              "gasFeeAPT": 0.00000551,
+              "explorerUrl": "https://explorer.aptoslabs.com/txn/0x530b7d4462bf2c6f88fbcbae38f00d2d1855409154a60f6f428edc2deb48c8e2?network=testnet",
+              "status": "deployed",
+              "timestamp": "2025-09-13T09:35:07.976Z"
+            }
+          },
+          "timestamp": "2025-09-13T09:34:57.249Z"
+        }
+      ],
+      "lastUpdated": "2025-09-13T09:35:07.981Z"
+    }
+  ]
+}

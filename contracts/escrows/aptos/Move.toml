@@ -1,0 +1,19 @@
+[package]
+name = "MerchantEscrow"
+version = "1.0.0"
+authors = ["Merchant Protocol Team"]
+
+[addresses]
+MerchantEscrow = "0x3ee84fe1d3446ca2f4c2dbc5815d1737172096ecd6d81376d348449fe7a1b0a5"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies.AptosStdlib]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-stdlib"
+
+[dev-dependencies]

@@ -1,0 +1,55 @@
+{
+  "merchantId": "CLI_TEST_001",
+  "merchantAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "totalUPIs": 1,
+  "upiEscrows": {
+    "test@cli-integration": {
+      "upiId": "test@cli-integration",
+      "escrows": {
+        "avalanche": {
+          "escrowId": "avalanche-test-cli-integration-CLI_TEST_001-1757762475329",
+          "contractAddress": "0x6B91B2ec3ebDFB6df6542061962DC6Bea0B9539B",
+          "network": "avalanche-fuji",
+          "token": "AVAX",
+          "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "txHash": "0xaef5999980e9543d216f52417e4ddf0f029b8c74b74512f0a6bdf1c69366893f",
+          "blockNumber": 45966385,
+          "gasUsed": "24544",
+          "deploymentCost": "0.000000000000049088",
+          "status": "deployed",
+          "note": "Avalanche escrow simulation for UPI payment method",
+          "timestamp": "2025-09-13T11:21:15.329Z"
+        },
+        "aptos": {
+          "escrowId": "aptos-test-cli-integration-CLI_TEST_001-1757762476738",
+          "contractAddress": "0x46d961ad7ad5dce4b0e8a133f28ddf5c42b362b81c1acfd870b909413731a67a",
+          "network": "aptos-testnet",
+          "token": "APT",
+          "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "fundedBy": "0xf9d57e56266876b07459f919263caf276b07978766ace8e17b65003bd227fea5",
+          "txHash": "0x69f18b490f5c9d22bf7f221b3b82aa1a05330d55af8c0e4d0c07bae7c8a4e1dc",
+          "blockHeight": "6862020801",
+          "gasUsed": "18",
+          "gasFeeOctas": "18",
+          "gasFeeAPT": 1.8e-7,
+          "explorerUrl": "https://explorer.aptoslabs.com/txn/0x69f18b490f5c9d22bf7f221b3b82aa1a05330d55af8c0e4d0c07bae7c8a4e1dc?network=testnet",
+          "status": "deployed",
+          "note": "Real Aptos escrow account created on testnet",
+          "timestamp": "2025-09-13T11:21:16.737Z"
+        }
+      },
+      "status": "completed"
+    }
+  },
+  "summary": {
+    "avalanche": {
+      "successful": 1,
+      "failed": 0
+    },
+    "aptos": {
+      "successful": 1,
+      "failed": 0
+    }
+  },
+  "timestamp": "2025-09-13T11:21:05.612Z"
+}

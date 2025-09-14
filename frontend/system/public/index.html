@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantraPay System Analytics</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh; color: #333;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-radius: 20px; padding: 25px; margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 { color: #1e3c72; margin-bottom: 15px; font-size: 2.5em; }
+        .btn {
+            background: linear-gradient(45deg, #1e3c72, #2a5298); color: white;
+            border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer;
+            font-weight: 600; transition: all 0.3s ease;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+        .wallet-info { background: rgba(0, 0, 0, 0.05); padding: 10px 15px; border-radius: 15px; font-family: monospace; }
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+        .nav-tabs {
+            display: flex; background: rgba(255, 255, 255, 0.95); border-radius: 20px;
+            padding: 10px; margin-bottom: 20px; gap: 10px; overflow-x: auto;
+        }
+        .nav-tab {
+            padding: 15px 25px; border: none; border-radius: 15px; background: transparent;
+            cursor: pointer; font-weight: 600; color: #666; transition: all 0.3s ease;
+        }
+        .nav-tab.active { background: linear-gradient(45deg, #1e3c72, #2a5298); color: white; }
+        .content-section { display: none; background: rgba(255, 255, 255, 0.95); border-radius: 20px; padding: 25px; }
+        .content-section.active { display: block; }
+        .grid { display: grid; gap: 20px; margin-bottom: 30px; }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+        .card {
+            background: white; border-radius: 15px; padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); transition: transform 0.3s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .metric { text-align: center; }
+        .metric-value { font-size: 2.5em; font-weight: bold; color: #1e3c72; margin-bottom: 5px; }
+        .metric-label { color: #666; font-size: 0.9em; }
+        .status { padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .status.healthy { background: #d4edda; color: #155724; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e1e5e9; }
+        .table th { background: #f8f9fa; font-weight: 600; }
+        .alert { padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .alert.success { background: #d4edda; color: #155724; }
+        .alert.error { background: #f8d7da; color: #721c24; }
+        @media (max-width: 768px) {
+            .grid-4, .grid-2 { grid-template-columns: 1fr; }
+            .nav-tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 QuantraPay System Analytics</h1>
+            <p style="color: #666; margin-bottom: 15px;">Blockchain Network Monitoring & Analytics</p>
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <button id="connectWallet" class="btn">Connect Wallet</button>
+                <div id="walletInfo" class="wallet-info" style="display: none;"></div>
+                <button id="disconnectWallet" class="btn" style="display: none;">Disconnect</button>
+            </div>
+            <div id="alertContainer"></div>
+        </div>
+
+        <div id="dashboard" class="dashboard">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-section="overview">Overview</button>
+                <button class="nav-tab" data-section="analytics">Analytics</button>
+                <button class="nav-tab" data-section="transactions">Transactions</button>
+                <button class="nav-tab" data-section="users">Users</button>
+                <button class="nav-tab" data-section="merchants">Merchants</button>
+                <button class="nav-tab" data-section="security">Security</button>
+                <button class="nav-tab" data-section="logs">System Logs</button>
+            </div>
+
+            <!-- Overview Section -->
+            <div id="overview" class="content-section active">
+                <h2>System Overview</h2>
+                
+                <div class="grid grid-4">
+                    <div class="card metric">
+                        <div class="metric-value" id="totalTransactions">156,789</div>
+                        <div class="metric-label">Total Transactions</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="totalUsers">12,345</div>
+                        <div class="metric-label">Active Users</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="totalMerchants">456</div>
+                        <div class="metric-label">Merchants</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="networkUptime">99.95%</div>
+                        <div class="metric-label">Network Uptime</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Blockchain Networks</h3>
+                        <div id="blockchainStatus"></div>
+                    </div>
+                    <div class="card">
+                        <h3>System Health</h3>
+                        <div id="systemHealth"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics" class="content-section">
+                <h2>Network Analytics</h2>
+                <div class="card">
+                    <canvas id="transactionChart" style="max-height: 400px;"></canvas>
+                </div>
+                <div class="grid grid-2">
+                    <div class="card">
+                        <canvas id="userChart" style="max-height: 300px;"></canvas>
+                    </div>
+                    <div class="card">
+                        <canvas id="volumeChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactions" class="content-section">
+                <h2>Transaction Monitoring</h2>
+                <div class="card">
+                    <div id="transactionsList"></div>
+                </div>
+            </div>
+
+            <!-- Users Section -->
+            <div id="users" class="content-section">
+                <h2>User Management</h2>
+                <div class="card">
+                    <div id="usersList"></div>
+                </div>
+            </div>
+
+            <!-- Merchants Section -->
+            <div id="merchants" class="content-section">
+                <h2>Merchant Analytics</h2>
+                <div class="card">
+                    <div id="merchantsList"></div>
+                </div>
+            </div>
+
+            <!-- Security Section -->
+            <div id="security" class="content-section">
+                <h2>Security Monitoring</h2>
+                <div class="card">
+                    <div id="securityMetrics"></div>
+                </div>
+            </div>
+
+            <!-- Logs Section -->
+            <div id="logs" class="content-section">
+                <h2>System Logs</h2>
+                <div class="card">
+                    <div id="systemLogs"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAccount = null;
+        let authToken = null;
+        let charts = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadPublicStats();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('disconnectWallet').addEventListener('click', disconnectWallet);
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => switchSection(e.target.dataset.section));
+            });
+        }
+
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showAlert('MetaMask is not installed!', 'error');
+                    return;
+                }
+
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                currentAccount = accounts[0];
+
+                const message = `QuantraPay System Access\nTimestamp: ${Date.now()}`;
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, currentAccount]
+                });
+
+                const response = await fetch('/api/auth/connect-wallet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        walletAddress: currentAccount,
+                        signature: signature,
+                        message: message,
+                        network: 'avalanche'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    updateWalletUI();
+                    showDashboard();
+                    loadDashboardData();
+                } else {
+                    showAlert('Failed to connect: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Wallet connection failed', 'error');
+            }
+        }
+
+        function disconnectWallet() {
+            currentAccount = null;
+            authToken = null;
+            updateWalletUI();
+            hideDashboard();
+        }
+
+        function updateWalletUI() {
+            const connectBtn = document.getElementById('connectWallet');
+            const disconnectBtn = document.getElementById('disconnectWallet');
+            const walletInfo = document.getElementById('walletInfo');
+
+            if (currentAccount) {
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'inline-block';
+                walletInfo.style.display = 'inline-block';
+                walletInfo.textContent = `${currentAccount.substring(0, 6)}...${currentAccount.substring(38)}`;
+            } else {
+                connectBtn.style.display = 'inline-block';
+                disconnectBtn.style.display = 'none';
+                walletInfo.style.display = 'none';
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboard').classList.add('active');
+        }
+
+        function hideDashboard() {
+            document.getElementById('dashboard').classList.remove('active');
+        }
+
+        function switchSection(sectionId) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+
+            switch(sectionId) {
+                case 'overview': loadOverview(); break;
+                case 'analytics': loadAnalytics(); break;
+                case 'transactions': loadTransactions(); break;
+                case 'users': loadUsers(); break;
+                case 'merchants': loadMerchants(); break;
+                case 'security': loadSecurity(); break;
+                case 'logs': loadLogs(); break;
+            }
+        }
+
+        async function loadPublicStats() {
+            try {
+                const response = await fetch('/api/public/stats');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('totalTransactions').textContent = data.stats.totalTransactions.toLocaleString();
+                    document.getElementById('totalUsers').textContent = data.stats.activeUsers.toLocaleString();
+                    document.getElementById('totalMerchants').textContent = data.stats.totalMerchants.toLocaleString();
+                    document.getElementById('networkUptime').textContent = data.stats.networkUptime + '%';
+                }
+            } catch (error) {
+                console.error('Error loading public stats:', error);
+            }
+        }
+
+        async function loadDashboardData() {
+            loadOverview();
+        }
+
+        async function loadOverview() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/overview', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayBlockchainStatus(data.overview.blockchainMetrics);
+                    displaySystemHealth(data.overview.systemHealth);
+                }
+            } catch (error) {
+                console.error('Error loading overview:', error);
+            }
+        }
+
+        function displayBlockchainStatus(metrics) {
+            const html = metrics.map(metric => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                    <div>
+                        <strong style="text-transform: capitalize;">${metric.network}</strong>
+                        <div style="font-size: 0.9em; color: #666;">Block: ${metric.blockHeight.toLocaleString()}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status ${metric.status}">${metric.status}</span>
+                        <div style="font-size: 0.9em; color: #666;">${metric.tps} TPS</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('blockchainStatus').innerHTML = html;
+        }
+
+        function displaySystemHealth(health) {
+            const html = health.services.map(service => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                    <div>
+                        <strong>${service.name}</strong>
+                        <div style="font-size: 0.9em; color: #666;">Uptime: ${service.uptime}%</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status ${service.status}">${service.status}</span>
+                        <div style="font-size: 0.9em; color: #666;">${service.responseTime}ms</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('systemHealth').innerHTML = html;
+        }
+
+        async function loadAnalytics() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/analytics?period=30d', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    createTransactionChart(data.analytics.metrics);
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        function createTransactionChart(metrics) {
+            const ctx = document.getElementById('transactionChart').getContext('2d');
+            
+            if (charts.transactions) {
+                charts.transactions.destroy();
+            }
+
+            charts.transactions = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: metrics.map(m => m.date),
+                    datasets: [{
+                        label: 'Daily Transactions',
+                        data: metrics.map(m => m.transactions),
+                        borderColor: '#1e3c72',
+                        backgroundColor: 'rgba(30, 60, 114, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Daily Transaction Volume' }
+                    }
+                }
+            });
+        }
+
+        async function loadTransactions() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/transactions?limit=20', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTransactions(data.transactions);
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr><th>Hash</th><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Network</th></tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(tx => `
+                            <tr>
+                                <td style="font-family: monospace;">${tx.hash.substring(0, 10)}...</td>
+                                <td style="font-family: monospace;">${tx.from.substring(0, 8)}...</td>
+                                <td style="font-family: monospace;">${tx.to.substring(0, 8)}...</td>
+                                <td>${tx.amount} AVAX</td>
+                                <td><span class="status ${tx.status}">${tx.status}</span></td>
+                                <td style="text-transform: capitalize;">${tx.network}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('transactionsList').innerHTML = html;
+        }
+
+        async function loadUsers() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/users?limit=20', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayUsers(data.users);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function displayUsers(users) {
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr><th>Wallet</th><th>Network</th><th>Transactions</th><th>Volume</th><th>Status</th><th>KYC</th></tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td style="font-family: monospace;">${user.walletAddress.substring(0, 10)}...</td>
+                                <td style="text-transform: capitalize;">${user.network}</td>
+                                <td>${user.transactionCount}</td>
+                                <td>$${user.totalVolume}</td>
+                                <td><span class="status ${user.status}">${user.status}</span></td>
+                                <td><span class="status ${user.kyc === 'verified' ? 'healthy' : 'warning'}">${user.kyc}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('usersList').innerHTML = html;
+        }
+
+        async function loadMerchants() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/merchants', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayMerchants(data.merchants);
+                }
+            } catch (error) {
+                console.error('Error loading merchants:', error);
+            }
+        }
+
+        function displayMerchants(merchants) {
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr><th>Name</th><th>Category</th><th>Transactions</th><th>Volume</th><th>Avg Value</th><th>Uptime</th></tr>
+                    </thead>
+                    <tbody>
+                        ${merchants.map(merchant => `
+                            <tr>
+                                <td><strong>${merchant.name}</strong></td>
+                                <td style="text-transform: capitalize;">${merchant.category}</td>
+                                <td>${merchant.transactionCount.toLocaleString()}</td>
+                                <td>${merchant.totalVolume.toFixed(2)} AVAX</td>
+                                <td>${merchant.avgTransactionValue.toFixed(2)} AVAX</td>
+                                <td><span class="status healthy">${merchant.uptime}%</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('merchantsList').innerHTML = html;
+        }
+
+        async function loadSecurity() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/security', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySecurity(data.security);
+                }
+            } catch (error) {
+                console.error('Error loading security:', error);
+            }
+        }
+
+        function displaySecurity(security) {
+            const html = `
+                <div class="grid grid-4" style="margin-bottom: 20px;">
+                    <div class="metric">
+                        <div class="metric-value">${security.suspiciousTransactions}</div>
+                        <div class="metric-label">Suspicious Transactions</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${security.blockedIPs}</div>
+                        <div class="metric-label">Blocked IPs</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${security.failedLogins}</div>
+                        <div class="metric-label">Failed Logins</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${security.fraudDetection.accuracy}%</div>
+                        <div class="metric-label">Fraud Detection Accuracy</div>
+                    </div>
+                </div>
+                <h4>Recent Security Alerts</h4>
+                ${security.securityAlerts.map(alert => `
+                    <div style="padding: 15px; border-left: 4px solid ${alert.severity === 'medium' ? '#ffc107' : '#28a745'}; margin: 10px 0; background: #f8f9fa;">
+                        <strong>${alert.type}</strong>
+                        <p>${alert.description}</p>
+                        <small>Status: ${alert.resolved ? 'Resolved' : 'Open'}</small>
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('securityMetrics').innerHTML = html;
+        }
+
+        async function loadLogs() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch('/api/admin/logs', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayLogs(data.logs);
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+            }
+        }
+
+        function displayLogs(logs) {
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr><th>Timestamp</th><th>Type</th><th>Message</th><th>Severity</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(log => `
+                            <tr>
+                                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                                <td>${log.type}</td>
+                                <td>${log.message}</td>
+                                <td><span class="status ${log.severity === 'error' ? 'error' : 'warning'}">${log.severity}</span></td>
+                                <td><span class="status ${log.resolved ? 'healthy' : 'warning'}">${log.resolved ? 'Resolved' : 'Open'}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('systemLogs').innerHTML = html;
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+    </script>
+</body>
+</html>

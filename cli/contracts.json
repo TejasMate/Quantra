@@ -1,0 +1,73 @@
+{
+  "networks": {
+    "localhost": {
+      "contracts": {
+        "MerchantCoreRegistry": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "MerchantKYCRegistry": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "MerchantRegionalRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "CollateralVault": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+        "EscrowConfigurationManager": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+        "EscrowDeploymentFactory": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+        "UnifiedVerifierManager": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+        "UPIVerifier": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+        "SEPAVerifier": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+        "PIXVerifier": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+        "ChainlinkPriceFeed": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+        "GovToken": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+        "TimelockController": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
+        "MerchantTreasury": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+        "MerchantGovernance": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+        "MerchantPaymentMethods": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+      },
+      "chainId": 31337
+    },
+    "avalanche-fuji": {
+      "contracts": {
+        "Escrow": "0x26B6ae3517939c9B6cD6D3D10A7BA235e63db316",
+        "SimpleMerchantRegistry": "0x08fE3E28Ef9FAdc1C2d0A39405Da42cb53750A91",
+        "SimpleMerchantOperations": "0xB257d5e5941041719EB4262d8DaEfF1B8d8678EC",
+        "EscrowNew": "0x18c8523290Fa27B05feEcCffa6D717415157eC2E",
+        "EscrowOld": "0x26B6ae3517939c9B6cD6D3D10A7BA235e63db316",
+        "WAVAX": "0x228bdE2D51916aCA7b23c3f15241F4A747c98534",
+        "SimpleMerchantOperationsNew": "0xB257d5e5941041719EB4262d8DaEfF1B8d8678EC",
+        "SimpleMerchantOperationsOld": "0x1e925764464E7055807351Ef6ea764a135BB332a",
+        "EscrowLatest": "0xB3f8ac7938361c74488aE261f8367dB1cd74EC9A"
+      }
+    },
+    "arbitrumSepolia": {
+      "contracts": {
+        "MerchantCoreRegistry": "0xdB904714d7F90cf63bBF53008C5d7473F12BC970",
+        "EnhancedMerchantOperations": "0x5644ea2993B33689684608EFE1fDF3BE33fA1e28",
+        "MerchantRegionalRegistry": "0x0372Ae799b1dc9A8BfC7d295DADA6415d3efa545",
+        "MerchantKYCRegistry": "0x38AeDb1b55Ea6739BE9695480b3A835bBEd65183",
+        "SimpleMerchantOperations": "0x20902E83186bcCF4D4C86bF6c8A6C8e8dA2C99AE",
+        "CollateralVault": "0xF2386C2717eFC658FFCc783B4734400606cA6C51",
+        "EscrowConfigurationManager": "0x088750a83f595CeD1C068C9A387ad0870CDEaDec",
+        "EscrowDeploymentFactory": "0x4Cba3f57F98f01A5e684b21E8eDa72e43d404218",
+        "GovToken": "0xC95395104f9682815123EEa9FCDC615FbC24ecD5",
+        "TimelockController": "0xC16E01df625cE9C3054d41d4a129b9781D619559",
+        "MerchantPaymentMethods": "0xeb14AF698563Dd5c793Df4CFbB0Ab3008D5cf265",
+        "MerchantGovernance": "0x029D2e9eE94d39999A539C92075468eA5fB82F03"
+      },
+      "chainId": 421614
+    },
+    "aptos-testnet": {
+      "contracts": {
+        "MerchantEscrow": "0xf9d57e56266876b07459f919263caf276b07978766ace8e17b65003bd227fea5"
+      }
+    }
+  },
+  "timestamp": "2025-09-13T05:30:35.705Z",
+  "kycRegistry": {
+    "address": "0x6F9C8e93B60Aa7EA0b591112413F9149B4efa97D",
+    "network": "arbitrumSepolia",
+    "deployer": "0x85317C592B6841154a308b9e54af3b0A55FfeDEa",
+    "deployedAt": "2025-09-13T20:22:32.094Z",
+    "governance": {
+      "daoAddress": "0x85317C592B6841154a308b9e54af3b0A55FfeDEa",
+      "votingPeriod": 60,
+      "proposalThreshold": 1,
+      "quorumPercentage": 51
+    }
+  }
+}

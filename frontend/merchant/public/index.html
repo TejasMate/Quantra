@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantraPay Merchant Dashboard</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .wallet-info {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #333;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 10px;
+            margin-bottom: 20px;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .content-section {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .wallet-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>QuantraPay Merchant Dashboard</h1>
+            <div class="wallet-section">
+                <button id="connectWallet" class="btn">Connect Wallet</button>
+                <div id="walletInfo" class="wallet-info" style="display: none;"></div>
+                <button id="disconnectWallet" class="btn" style="display: none;">Disconnect</button>
+            </div>
+            <div id="alertContainer"></div>
+        </div>
+
+        <!-- Profile Setup Modal -->
+        <div id="profileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px;">
+                <h3>Complete Your Merchant Profile</h3>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label>Business Name</label>
+                        <input type="text" class="form-control" name="businessName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Type</label>
+                        <select class="form-control" name="businessType" required>
+                            <option value="">Select Business Type</option>
+                            <option value="retail">Retail</option>
+                            <option value="ecommerce">E-commerce</option>
+                            <option value="services">Services</option>
+                            <option value="restaurant">Restaurant</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Address</label>
+                        <textarea class="form-control" name="address" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" class="form-control" name="phone" required>
+                    </div>
+                    <button type="submit" class="btn">Complete Profile</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="dashboard" class="dashboard">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-section="overview">Overview</button>
+                <button class="nav-tab" data-section="escrows">Escrows</button>
+                <button class="nav-tab" data-section="transactions">Transactions</button>
+                <button class="nav-tab" data-section="payment-methods">Payment Methods</button>
+                <button class="nav-tab" data-section="analytics">Analytics</button>
+                <button class="nav-tab" data-section="disputes">Disputes</button>
+                <button class="nav-tab" data-section="settings">Settings</button>
+            </div>
+
+            <!-- Overview Section -->
+            <div id="overview" class="content-section active">
+                <h2>Dashboard Overview</h2>
+                <div class="grid grid-3">
+                    <div class="card metric">
+                        <div class="metric-value" id="totalRevenue">$0</div>
+                        <div class="metric-label">Total Revenue</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="totalTransactions">0</div>
+                        <div class="metric-label">Total Transactions</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="successRate">0%</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Recent Transactions</h3>
+                        <div id="recentTransactions">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                Loading transactions...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Active Escrows</h3>
+                        <div id="activeEscrows">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                Loading escrows...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Escrows Section -->
+            <div id="escrows" class="content-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Escrow Management</h2>
+                    <button class="btn" onclick="showCreateEscrowModal()">Create New Escrow</button>
+                </div>
+                
+                <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <select id="escrowStatusFilter" class="form-control" style="width: auto;">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="disputed">Disputed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button class="btn" onclick="loadEscrows()">Filter</button>
+                    </div>
+                    <div id="escrowsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading escrows...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactions" class="content-section">
+                <h2>Transaction History</h2>
+                <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <select id="txStatusFilter" class="form-control" style="width: auto;">
+                            <option value="">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <input type="date" id="dateFrom" class="form-control" style="width: auto;">
+                        <input type="date" id="dateTo" class="form-control" style="width: auto;">
+                        <button class="btn" onclick="loadTransactions()">Filter</button>
+                    </div>
+                    <div id="transactionsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading transactions...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Methods Section -->
+            <div id="payment-methods" class="content-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Payment Methods</h2>
+                    <button class="btn" onclick="showCreatePaymentMethodModal()">Add Payment Method</button>
+                </div>
+                
+                <div id="paymentMethodsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading payment methods...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics" class="content-section">
+                <h2>Analytics & Reports</h2>
+                <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                        <select id="analyticsPeriod" class="form-control" style="width: auto;">
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="90d">Last 90 Days</option>
+                        </select>
+                        <button class="btn" onclick="loadAnalytics()">Update</button>
+                    </div>
+                    <canvas id="revenueChart" style="max-height: 400px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Disputes Section -->
+            <div id="disputes" class="content-section">
+                <h2>Dispute Management</h2>
+                <div id="disputesList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading disputes...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings" class="content-section">
+                <h2>Settings</h2>
+                <div class="card">
+                    <h3>Business Settings</h3>
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="notifications"> Enable Notifications
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="autoSettle"> Auto Settlement
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Settlement Time (hours)</label>
+                            <input type="number" class="form-control" name="settlementTime" min="1" max="168">
+                        </div>
+                        <button type="submit" class="btn">Save Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAccount = null;
+        let authToken = null;
+        let revenueChart = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            checkWalletConnection();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('disconnectWallet').addEventListener('click', disconnectWallet);
+            
+            // Navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => switchSection(e.target.dataset.section));
+            });
+
+            // Profile form
+            document.getElementById('profileForm').addEventListener('submit', handleProfileSubmit);
+            document.getElementById('settingsForm').addEventListener('submit', handleSettingsSubmit);
+        }
+
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showAlert('MetaMask is not installed!', 'error');
+                    return;
+                }
+
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                currentAccount = accounts[0];
+
+                // Sign message for authentication
+                const message = `Welcome to QuantraPay Merchant Dashboard!\n\nPlease sign this message to authenticate your wallet.\n\nTimestamp: ${Date.now()}`;
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, currentAccount]
+                });
+
+                // Authenticate with backend
+                const response = await fetch('/api/auth/connect-wallet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        walletAddress: currentAccount,
+                        signature: signature,
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    updateWalletUI();
+                    
+                    if (!data.merchant.businessName) {
+                        showProfileModal();
+                    } else {
+                        showDashboard();
+                        loadDashboardData();
+                    }
+                } else {
+                    showAlert('Failed to connect wallet: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Wallet connection error:', error);
+                showAlert('Failed to connect wallet', 'error');
+            }
+        }
+
+        function disconnectWallet() {
+            currentAccount = null;
+            authToken = null;
+            updateWalletUI();
+            hideDashboard();
+        }
+
+        function updateWalletUI() {
+            const connectBtn = document.getElementById('connectWallet');
+            const disconnectBtn = document.getElementById('disconnectWallet');
+            const walletInfo = document.getElementById('walletInfo');
+
+            if (currentAccount) {
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'inline-block';
+                walletInfo.style.display = 'inline-block';
+                walletInfo.textContent = `Connected: ${currentAccount.substring(0, 6)}...${currentAccount.substring(38)}`;
+            } else {
+                connectBtn.style.display = 'inline-block';
+                disconnectBtn.style.display = 'none';
+                walletInfo.style.display = 'none';
+            }
+        }
+
+        function showProfileModal() {
+            document.getElementById('profileModal').style.display = 'block';
+        }
+
+        function hideProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+
+        async function handleProfileSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const profileData = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/merchant/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    hideProfileModal();
+                    showDashboard();
+                    loadDashboardData();
+                    showAlert('Profile completed successfully!', 'success');
+                } else {
+                    showAlert('Failed to update profile: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Profile update error:', error);
+                showAlert('Failed to update profile', 'error');
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboard').classList.add('active');
+        }
+
+        function hideDashboard() {
+            document.getElementById('dashboard').classList.remove('active');
+        }
+
+        function switchSection(sectionId) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+
+            // Update content sections
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+
+            // Load section-specific data
+            switch(sectionId) {
+                case 'overview':
+                    loadDashboardData();
+                    break;
+                case 'escrows':
+                    loadEscrows();
+                    break;
+                case 'transactions':
+                    loadTransactions();
+                    break;
+                case 'payment-methods':
+                    loadPaymentMethods();
+                    break;
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+                case 'disputes':
+                    loadDisputes();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load analytics
+                const analyticsResponse = await fetch('/api/merchant/analytics?period=7d', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const analyticsData = await analyticsResponse.json();
+                
+                if (analyticsData.success) {
+                    document.getElementById('totalRevenue').textContent = `$${analyticsData.analytics.totalRevenue}`;
+                    document.getElementById('totalTransactions').textContent = analyticsData.analytics.totalTransactions;
+                    document.getElementById('successRate').textContent = `${analyticsData.analytics.successRate}%`;
+                }
+
+                // Load recent transactions
+                const transactionsResponse = await fetch('/api/merchant/transactions?limit=5', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const transactionsData = await transactionsResponse.json();
+                
+                if (transactionsData.success) {
+                    displayRecentTransactions(transactionsData.transactions);
+                }
+
+                // Load active escrows
+                const escrowsResponse = await fetch('/api/merchant/escrows?status=active&limit=5', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const escrowsData = await escrowsResponse.json();
+                
+                if (escrowsData.success) {
+                    displayActiveEscrows(escrowsData.escrows);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function displayRecentTransactions(transactions) {
+            const container = document.getElementById('recentTransactions');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p>No recent transactions</p>';
+                return;
+            }
+
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(tx => `
+                            <tr>
+                                <td>${tx.amount} ${tx.currency}</td>
+                                <td><span class="status ${tx.status}">${tx.status}</span></td>
+                                <td>${new Date(tx.createdAt).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        function displayActiveEscrows(escrows) {
+            const container = document.getElementById('activeEscrows');
+            
+            if (escrows.length === 0) {
+                container.innerHTML = '<p>No active escrows</p>';
+                return;
+            }
+
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Customer</th>
+                            <th>Expires</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${escrows.map(escrow => `
+                            <tr>
+                                <td>${escrow.amount} AVAX</td>
+                                <td>${escrow.customerAddress.substring(0, 8)}...</td>
+                                <td>${new Date(escrow.expiresAt).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        async function loadEscrows() {
+            try {
+                const status = document.getElementById('escrowStatusFilter').value;
+                const url = `/api/merchant/escrows${status ? `?status=${status}` : ''}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayEscrows(data.escrows);
+                }
+            } catch (error) {
+                console.error('Error loading escrows:', error);
+            }
+        }
+
+        function displayEscrows(escrows) {
+            const container = document.getElementById('escrowsList');
+            
+            if (escrows.length === 0) {
+                container.innerHTML = '<p>No escrows found</p>';
+                return;
+            }
+
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Customer</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${escrows.map(escrow => `
+                            <tr>
+                                <td>${escrow.amount} AVAX</td>
+                                <td>${escrow.customerAddress.substring(0, 8)}...</td>
+                                <td>${escrow.description}</td>
+                                <td><span class="status ${escrow.status}">${escrow.status}</span></td>
+                                <td>${new Date(escrow.createdAt).toLocaleDateString()}</td>
+                                <td>${new Date(escrow.expiresAt).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        async function loadTransactions() {
+            try {
+                const status = document.getElementById('txStatusFilter').value;
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+                
+                const params = new URLSearchParams();
+                if (status) params.append('status', status);
+                if (dateFrom) params.append('dateFrom', dateFrom);
+                if (dateTo) params.append('dateTo', dateTo);
+                
+                const response = await fetch(`/api/merchant/transactions?${params}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTransactions(data.transactions);
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p>No transactions found</p>';
+                return;
+            }
+
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>TX Hash</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(tx => `
+                            <tr>
+                                <td>${tx.amount} ${tx.currency}</td>
+                                <td>${tx.type}</td>
+                                <td><span class="status ${tx.status}">${tx.status}</span></td>
+                                <td>${tx.customerAddress.substring(0, 8)}...</td>
+                                <td>${new Date(tx.createdAt).toLocaleDateString()}</td>
+                                <td><a href="#" onclick="copyToClipboard('${tx.txHash}')">${tx.txHash.substring(0, 10)}...</a></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        async function loadPaymentMethods() {
+            try {
+                const response = await fetch('/api/merchant/payment-methods', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPaymentMethods(data.paymentMethods);
+                }
+            } catch (error) {
+                console.error('Error loading payment methods:', error);
+            }
+        }
+
+        function displayPaymentMethods(paymentMethods) {
+            const container = document.getElementById('paymentMethodsList');
+            
+            if (paymentMethods.length === 0) {
+                container.innerHTML = '<div class="card"><p>No payment methods configured</p></div>';
+                return;
+            }
+
+            const html = paymentMethods.map(pm => `
+                <div class="card">
+                    <h3>${pm.type} - ${pm.currency}</h3>
+                    <p>Status: <span class="status ${pm.isActive ? 'active' : 'pending'}">${pm.isActive ? 'Active' : 'Inactive'}</span></p>
+                    <p>Created: ${new Date(pm.createdAt).toLocaleDateString()}</p>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        async function loadAnalytics() {
+            try {
+                const period = document.getElementById('analyticsPeriod').value;
+                const response = await fetch(`/api/merchant/analytics?period=${period}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAnalyticsChart(data.analytics);
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        function displayAnalyticsChart(analytics) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: analytics.chartData.map(d => d.date),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: analytics.chartData.map(d => d.revenue),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Transactions',
+                        data: analytics.chartData.map(d => d.transactions),
+                        borderColor: '#764ba2',
+                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadDisputes() {
+            try {
+                const response = await fetch('/api/merchant/disputes', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayDisputes(data.disputes);
+                }
+            } catch (error) {
+                console.error('Error loading disputes:', error);
+            }
+        }
+
+        function displayDisputes(disputes) {
+            const container = document.getElementById('disputesList');
+            
+            if (disputes.length === 0) {
+                container.innerHTML = '<div class="card"><p>No disputes found</p></div>';
+                return;
+            }
+
+            const html = disputes.map(dispute => `
+                <div class="card">
+                    <h3>Dispute #${dispute.id}</h3>
+                    <p>Status: <span class="status ${dispute.status}">${dispute.status}</span></p>
+                    <p>Reason: ${dispute.reason}</p>
+                    <p>Created: ${new Date(dispute.createdAt).toLocaleDateString()}</p>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/merchant/settings', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const form = document.getElementById('settingsForm');
+                    form.elements.notifications.checked = data.settings.notifications;
+                    form.elements.autoSettle.checked = data.settings.autoSettle;
+                    form.elements.settlementTime.value = data.settings.settlementTime / 3600; // Convert to hours
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        async function handleSettingsSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const settings = {
+                notifications: formData.has('notifications'),
+                autoSettle: formData.has('autoSettle'),
+                settlementTime: parseInt(formData.get('settlementTime')) * 3600 // Convert to seconds
+            };
+
+            try {
+                const response = await fetch('/api/merchant/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('Settings updated successfully!', 'success');
+                } else {
+                    showAlert('Failed to update settings: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Settings update error:', error);
+                showAlert('Failed to update settings', 'error');
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Copied to clipboard!', 'success');
+            });
+        }
+
+        async function checkWalletConnection() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        currentAccount = accounts[0];
+                        updateWalletUI();
+                    }
+                } catch (error) {
+                    console.error('Error checking wallet connection:', error);
+                }
+            }
+        }
+
+        // Modal functions (to be implemented)
+        function showCreateEscrowModal() {
+            // Implementation for escrow creation modal
+            showAlert('Escrow creation modal - To be implemented', 'info');
+        }
+
+        function showCreatePaymentMethodModal() {
+            // Implementation for payment method creation modal
+            showAlert('Payment method creation modal - To be implemented', 'info');
+        }
+    </script>
+</body>
+</html>

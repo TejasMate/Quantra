@@ -1,0 +1,643 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "../interfaces/IRegionalRegistry.sol";
+
+/**
+ * @title MerchantGovernance
+ * @dev DAO Governance layer for stake amounts and KYC bypass control
+ * Acts as policy layer between CLI and existing contracts
+ */
+contract MerchantGovernance is 
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
+    // Role definitions
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant DAO_ROLE = keccak256("DAO_ROLE");
+    
+    // Contract references
+    address public regionalRegistry;
+    address public daoGovernance;
+    
+    // DAO Governance State for Stake Control
+    mapping(IRegionalRegistry.Region => uint256) public daoStakeOverrides;
+    mapping(IRegionalRegistry.Region => bool) public daoStakeOverrideEnabled;
+    
+    // DAO Governance State for KYC Bypass
+    bool public globalKycBypass;
+    mapping(IRegionalRegistry.Region => bool) public regionKycBypass;
+    mapping(address => bool) public addressKycBypass;
+    
+    // DAO Governance State for Region Management
+    mapping(uint256 => bool) public daoManagedRegions;
+    mapping(uint256 => string) public regionNames;
+    mapping(uint256 => bool) public regionActive;
+    mapping(uint256 => uint256) public regionMaxMerchants;
+    uint256[] public managedRegionsList;
+    
+    // Events for DAO Governance
+    event DAOStakeOverrideSet(IRegionalRegistry.Region indexed region, uint256 newStake, bool enabled);
+    event GlobalKycBypassSet(bool enabled, address indexed dao);
+    event RegionKycBypassSet(IRegionalRegistry.Region indexed region, bool enabled, address indexed dao);
+    event AddressKycBypassSet(address indexed merchant, bool enabled, address indexed dao);
+    event GovernanceDecisionMade(string indexed action, bytes data, address indexed dao);
+    event RegionAdded(IRegionalRegistry.Region indexed region, string name, uint256 defaultStake, uint256 maxMerchants);
+    event RegionRemoved(IRegionalRegistry.Region indexed region, string name);
+    event RegionConfigUpdated(IRegionalRegistry.Region indexed region, string name, bool active, uint256 maxMerchants);
+    
+    // ===== PROPOSAL GOVERNANCE STRUCTURES =====
+    
+    struct Proposal {
+        uint256 id;
+        address proposer;
+        string title;
+        string description;
+        address[] targets;
+        uint256[] values;
+        bytes[] calldatas;
+        uint256 startBlock;
+        uint256 endBlock;
+        uint256 forVotes;
+        uint256 againstVotes;
+        uint256 abstainVotes;
+        bool executed;
+        bool canceled;
+        mapping(address => bool) hasVoted;
+        mapping(address => uint8) votes; // 0=against, 1=for, 2=abstain
+    }
+    
+    mapping(uint256 => Proposal) public proposals;
+    uint256 public proposalCount;
+    uint256 public votingDelay = 1; // blocks
+    uint256 public votingPeriod = 50400; // ~7 days in blocks (assuming 12s blocks)
+    uint256 public proposalThreshold = 100000e18; // 100k tokens
+    uint256 public quorum = 400000e18; // 400k tokens
+    
+    // Delegation
+    mapping(address => address) public delegates;
+    mapping(address => uint256) public delegatedVotingPower;
+    
+    event ProposalCreated(
+        uint256 indexed id,
+        address indexed proposer,
+        string title,
+        string description,
+        uint256 startBlock,
+        uint256 endBlock
+    );
+    event VoteCast(address indexed voter, uint256 indexed proposalId, uint8 support, uint256 weight, string reason);
+    event ProposalExecuted(uint256 indexed proposalId);
+    event ProposalCanceled(uint256 indexed proposalId);
+    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+    
+    /**
+     * @dev Initialize the governance controller
+     */
+    function initialize(
+        address _admin,
+        address _daoGovernance,
+        address _regionalRegistry
+    ) external initializer {
+        __AccessControl_init();
+        __Pausable_init();
+        __UUPSUpgradeable_init();
+        
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(DAO_ROLE, _daoGovernance);
+        
+        daoGovernance = _daoGovernance;
+        regionalRegistry = _regionalRegistry;
+    }
+    
+    // ===== DAO STAKE CONTROL FUNCTIONS =====
+    
+    /**
+     * @dev DAO can override stake amount for any region
+     */
+    function setDAOStakeOverride(
+        IRegionalRegistry.Region region,
+        uint256 newStakeAmount,
+        bool enabled
+    ) external onlyRole(DAO_ROLE) {
+        daoStakeOverrides[region] = newStakeAmount;
+        daoStakeOverrideEnabled[region] = enabled;
+        
+        emit DAOStakeOverrideSet(region, newStakeAmount, enabled);
+        emit GovernanceDecisionMade("STAKE_OVERRIDE", abi.encode(region, newStakeAmount, enabled), msg.sender);
+    }
+    
+    /**
+     * @dev Get effective stake amount (DAO override or original)
+     * This is what CLI should call instead of direct registry
+     */
+    function getEffectiveStakeAmount(IRegionalRegistry.Region region) external view returns (uint256) {
+        if (daoStakeOverrideEnabled[region]) {
+            return daoStakeOverrides[region];
+        }
+        
+        // Fallback to original registry
+        (bool success, bytes memory data) = regionalRegistry.staticcall(
+            abi.encodeWithSignature("getMinStake(uint8)", uint8(region))
+        );
+        
+        if (success && data.length > 0) {
+            return abi.decode(data, (uint256));
+        }
+        
+        // Default fallback
+        return 0.1 ether;
+    }
+    
+    // ===== DAO KYC BYPASS FUNCTIONS =====
+    
+    /**
+     * @dev DAO can enable/disable global KYC bypass (emergency)
+     */
+    function setGlobalKycBypass(bool enabled) external onlyRole(DAO_ROLE) {
+        globalKycBypass = enabled;
+        emit GlobalKycBypassSet(enabled, msg.sender);
+        emit GovernanceDecisionMade("GLOBAL_KYC_BYPASS", abi.encode(enabled), msg.sender);
+    }
+    
+    /**
+     * @dev DAO can enable/disable KYC bypass for specific region
+     */
+    function setRegionKycBypass(IRegionalRegistry.Region region, bool enabled) external onlyRole(DAO_ROLE) {
+        regionKycBypass[region] = enabled;
+        emit RegionKycBypassSet(region, enabled, msg.sender);
+        emit GovernanceDecisionMade("REGION_KYC_BYPASS", abi.encode(region, enabled), msg.sender);
+    }
+    
+    /**
+     * @dev DAO can whitelist specific addresses for KYC bypass
+     */
+    function setAddressKycBypass(address merchant, bool enabled) external onlyRole(DAO_ROLE) {
+        addressKycBypass[merchant] = enabled;
+        emit AddressKycBypassSet(merchant, enabled, msg.sender);
+        emit GovernanceDecisionMade("ADDRESS_KYC_BYPASS", abi.encode(merchant, enabled), msg.sender);
+    }
+    
+    /**
+     * @dev Check if KYC should be bypassed for merchant in region
+     * This is what CLI should call for KYC decisions
+     */
+    function shouldBypassKyc(address merchant, IRegionalRegistry.Region region) external view returns (bool) {
+        // Global bypass affects all
+        if (globalKycBypass) return true;
+        
+        // Address-specific bypass
+        if (addressKycBypass[merchant]) return true;
+        
+        // Region-specific bypass
+        if (regionKycBypass[region]) return true;
+        
+        return false;
+    }
+    
+    // ===== DAO REGION MANAGEMENT FUNCTIONS =====
+    
+    /**
+     * @dev DAO can add a new region for merchant registration
+     */
+    function addCustomRegion(
+        uint256 regionId,
+        string memory name,
+        uint256 defaultStakeAmount,
+        uint256 maxMerchants,
+        bool active
+    ) external onlyRole(DAO_ROLE) {
+        require(!daoManagedRegions[regionId], "Region already exists");
+        require(bytes(name).length > 0, "Region name required");
+        require(regionId >= 100, "Custom regions must use ID >= 100");
+        
+        // Add region to DAO management
+        daoManagedRegions[regionId] = true;
+        regionNames[regionId] = name;
+        regionActive[regionId] = active;
+        regionMaxMerchants[regionId] = maxMerchants;
+        managedRegionsList.push(regionId);
+        
+        // Set default stake amount for custom region
+        IRegionalRegistry.Region customRegion = IRegionalRegistry.Region.CUSTOM;
+        daoStakeOverrides[customRegion] = defaultStakeAmount;
+        daoStakeOverrideEnabled[customRegion] = true;
+        
+        emit RegionAdded(customRegion, name, defaultStakeAmount, maxMerchants);
+        emit GovernanceDecisionMade("ADD_REGION", abi.encode(regionId, name, defaultStakeAmount, maxMerchants, active), msg.sender);
+    }
+
+    /**
+     * @dev DAO can remove a region from merchant registration
+     */
+    function removeCustomRegion(uint256 regionId) external onlyRole(DAO_ROLE) {
+        require(daoManagedRegions[regionId], "Region not managed by DAO");
+        
+        string memory regionName = regionNames[regionId];
+        
+        // Remove from DAO management
+        daoManagedRegions[regionId] = false;
+        regionActive[regionId] = false;
+        
+        // Remove from managed regions list
+        for (uint256 i = 0; i < managedRegionsList.length; i++) {
+            if (managedRegionsList[i] == regionId) {
+                managedRegionsList[i] = managedRegionsList[managedRegionsList.length - 1];
+                managedRegionsList.pop();
+                break;
+            }
+        }
+        
+        // Clear region data
+        delete regionNames[regionId];
+        delete regionMaxMerchants[regionId];
+        
+        emit RegionRemoved(IRegionalRegistry.Region.CUSTOM, regionName);
+        emit GovernanceDecisionMade("REMOVE_REGION", abi.encode(regionId, regionName), msg.sender);
+    }
+
+    /**
+     * @dev Update region configuration
+     */
+    function updateCustomRegionConfig(
+        uint256 regionId,
+        string memory name,
+        bool active,
+        uint256 maxMerchants
+    ) external onlyRole(DAO_ROLE) {
+        require(daoManagedRegions[regionId], "Region not managed by DAO");
+        
+        regionNames[regionId] = name;
+        regionActive[regionId] = active;
+        regionMaxMerchants[regionId] = maxMerchants;
+        
+        emit RegionConfigUpdated(IRegionalRegistry.Region.CUSTOM, name, active, maxMerchants);
+        emit GovernanceDecisionMade("UPDATE_REGION", abi.encode(regionId, name, active, maxMerchants), msg.sender);
+    }
+
+    /**
+     * @dev Check if a custom region is available for registration
+     */
+    function isCustomRegionAvailable(uint256 regionId) external view returns (bool) {
+        if (daoManagedRegions[regionId]) {
+            return regionActive[regionId];
+        }
+        return false;
+    }
+
+    /**
+     * @dev Get information about a custom region
+     */
+    function getCustomRegionInfo(uint256 regionId) external view returns (
+        string memory name,
+        bool active,
+        bool daoManaged,
+        uint256 currentStake,
+        uint256 maxMerchants,
+        bool kycBypassed
+    ) {
+        daoManaged = daoManagedRegions[regionId];
+        
+        if (daoManaged) {
+            name = regionNames[regionId];
+            active = regionActive[regionId];
+            maxMerchants = regionMaxMerchants[regionId];
+            currentStake = daoStakeOverrides[IRegionalRegistry.Region.CUSTOM];
+            kycBypassed = regionKycBypass[IRegionalRegistry.Region.CUSTOM];
+        } else {
+            // Return empty/default values for non-DAO regions
+            name = "";
+            active = false;
+            currentStake = 0;
+            maxMerchants = 0;
+            kycBypassed = false;
+        }
+    }
+
+    /**
+     * @dev Get all DAO-managed regions
+     */
+    function getManagedCustomRegions() external view returns (uint256[] memory) {
+        return managedRegionsList;
+    }
+    
+    /**
+     * @dev DAO can remove a region from merchant registration
+     */
+    function removeRegion(uint256 regionId) external onlyRole(DAO_ROLE) {
+        require(daoManagedRegions[regionId], "Region not managed by DAO");
+        
+        string memory regionName = regionNames[regionId];
+        
+        // Remove from DAO management
+        daoManagedRegions[regionId] = false;
+        regionActive[regionId] = false;
+        
+        // Remove from managed regions list
+        for (uint256 i = 0; i < managedRegionsList.length; i++) {
+            if (managedRegionsList[i] == regionId) {
+                managedRegionsList[i] = managedRegionsList[managedRegionsList.length - 1];
+                managedRegionsList.pop();
+                break;
+            }
+        }
+        
+        // Clear region data
+        delete regionNames[regionId];
+        delete regionMaxMerchants[regionId];
+        
+        emit RegionRemoved(IRegionalRegistry.Region.CUSTOM, regionName);
+        emit GovernanceDecisionMade("REMOVE_REGION", abi.encode(regionId, regionName), msg.sender);
+    }
+
+    // Note: Old region management functions removed due to enum/uint256 conflicts
+    // Use addCustomRegion, removeCustomRegion, etc. instead
+    
+    // ===== MERCHANT GOVERNANCE INFO FUNCTIONS =====
+    
+    /**
+     * @dev Get merchant-specific governance info
+     */
+    function getMerchantGovernanceInfo(address merchant, IRegionalRegistry.Region region) external view returns (
+        uint256 requiredStake,
+        bool kycBypassed,
+        string memory bypassReason
+    ) {
+        requiredStake = this.getEffectiveStakeAmount(region);
+        kycBypassed = this.shouldBypassKyc(merchant, region);
+        
+        if (kycBypassed) {
+            if (globalKycBypass) {
+                bypassReason = "Global DAO bypass enabled";
+            } else if (addressKycBypass[merchant]) {
+                bypassReason = "Address whitelisted by DAO";
+            } else if (regionKycBypass[region]) {
+                bypassReason = "Region bypass enabled by DAO";
+            }
+        } else {
+            bypassReason = "KYC required";
+        }
+        
+        return (requiredStake, kycBypassed, bypassReason);
+    }
+    
+    /**
+     * @dev Get all active DAO overrides summary
+     */
+    function getDAOOverridesSummary() external view returns (
+        uint256 stakeOverrideCount,
+        uint256 regionBypassCount,
+        uint256 totalAddressBypasses,
+        bool globalBypass
+    ) {
+        // Count active stake overrides
+        for (uint256 i = 0; i <= uint256(IRegionalRegistry.Region.MIDDLE_EAST_AFRICA); i++) {
+            if (daoStakeOverrideEnabled[IRegionalRegistry.Region(i)]) {
+                stakeOverrideCount++;
+            }
+            if (regionKycBypass[IRegionalRegistry.Region(i)]) {
+                regionBypassCount++;
+            }
+        }
+        
+        globalBypass = globalKycBypass;
+        // Note: totalAddressBypasses would need enumeration, simplified for now
+        
+        return (stakeOverrideCount, regionBypassCount, totalAddressBypasses, globalBypass);
+    }
+    
+    // ===== PROPOSAL GOVERNANCE FUNCTIONS =====
+    
+    /**
+     * @dev Create a new governance proposal
+     */
+    function propose(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        string memory description
+    ) external returns (uint256) {
+        require(getVotingPower(msg.sender) >= proposalThreshold, "Insufficient voting power");
+        require(targets.length == values.length && targets.length == calldatas.length, "Array length mismatch");
+        require(targets.length > 0, "Empty proposal");
+        
+        uint256 proposalId = ++proposalCount;
+        
+        Proposal storage proposal = proposals[proposalId];
+        proposal.id = proposalId;
+        proposal.proposer = msg.sender;
+        proposal.description = description;
+        proposal.targets = targets;
+        proposal.values = values;
+        proposal.calldatas = calldatas;
+        proposal.startBlock = block.number + votingDelay;
+        proposal.endBlock = proposal.startBlock + votingPeriod;
+        
+        emit ProposalCreated(proposalId, msg.sender, "", description, proposal.startBlock, proposal.endBlock);
+        
+        return proposalId;
+    }
+    
+    /**
+     * @dev Create a proposal with metadata
+     */
+    function proposeWithMetadata(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        string memory description,
+        uint256 category
+    ) external returns (uint256) {
+        // For now, ignore category and delegate to standard propose
+        return propose(targets, values, calldatas, description);
+    }
+    
+    /**
+     * @dev Cast a vote on a proposal
+     */
+    function castVote(uint256 proposalId, uint8 support) external returns (uint256) {
+        return castVoteWithReason(proposalId, support, "");
+    }
+    
+    /**
+     * @dev Cast a vote with reason
+     */
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string memory reason
+    ) public returns (uint256) {
+        require(proposalId <= proposalCount && proposalId > 0, "Invalid proposal ID");
+        require(support <= 2, "Invalid vote type");
+        
+        Proposal storage proposal = proposals[proposalId];
+        require(block.number >= proposal.startBlock, "Voting not started");
+        require(block.number <= proposal.endBlock, "Voting ended");
+        require(!proposal.hasVoted[msg.sender], "Already voted");
+        require(!proposal.executed && !proposal.canceled, "Proposal finalized");
+        
+        uint256 weight = getVotingPower(msg.sender);
+        require(weight > 0, "No voting power");
+        
+        proposal.hasVoted[msg.sender] = true;
+        proposal.votes[msg.sender] = support;
+        
+        if (support == 0) {
+            proposal.againstVotes += weight;
+        } else if (support == 1) {
+            proposal.forVotes += weight;
+        } else {
+            proposal.abstainVotes += weight;
+        }
+        
+        emit VoteCast(msg.sender, proposalId, support, weight, reason);
+        
+        return weight;
+    }
+    
+    /**
+     * @dev Execute a successful proposal
+     */
+    function execute(uint256 proposalId) external payable {
+        require(proposalId <= proposalCount && proposalId > 0, "Invalid proposal ID");
+        
+        Proposal storage proposal = proposals[proposalId];
+        require(!proposal.executed, "Already executed");
+        require(!proposal.canceled, "Proposal canceled");
+        require(block.number > proposal.endBlock, "Voting not ended");
+        require(proposal.forVotes > proposal.againstVotes, "Proposal failed");
+        require(proposal.forVotes >= quorum, "Quorum not reached");
+        
+        proposal.executed = true;
+        
+        for (uint256 i = 0; i < proposal.targets.length; i++) {
+            (bool success, ) = proposal.targets[i].call{value: proposal.values[i]}(proposal.calldatas[i]);
+            require(success, "Execution failed");
+        }
+        
+        emit ProposalExecuted(proposalId);
+    }
+    
+    /**
+     * @dev Get proposal state
+     */
+    function state(uint256 proposalId) external view returns (uint8) {
+        require(proposalId <= proposalCount && proposalId > 0, "Invalid proposal ID");
+        
+        Proposal storage proposal = proposals[proposalId];
+        
+        if (proposal.canceled) return 2; // Canceled
+        if (proposal.executed) return 7; // Executed
+        if (block.number <= proposal.startBlock) return 0; // Pending
+        if (block.number <= proposal.endBlock) return 1; // Active
+        if (proposal.forVotes <= proposal.againstVotes || proposal.forVotes < quorum) return 3; // Defeated
+        return 4; // Succeeded
+    }
+    
+    /**
+     * @dev Get proposal details
+     */
+    function getProposal(uint256 proposalId) external view returns (
+        address proposer,
+        string memory description,
+        uint256 startBlock,
+        uint256 endBlock,
+        uint256 forVotes,
+        uint256 againstVotes,
+        uint256 abstainVotes,
+        bool executed,
+        bool canceled
+    ) {
+        require(proposalId <= proposalCount && proposalId > 0, "Invalid proposal ID");
+        
+        Proposal storage proposal = proposals[proposalId];
+        return (
+            proposal.proposer,
+            proposal.description,
+            proposal.startBlock,
+            proposal.endBlock,
+            proposal.forVotes,
+            proposal.againstVotes,
+            proposal.abstainVotes,
+            proposal.executed,
+            proposal.canceled
+        );
+    }
+    
+    /**
+     * @dev Delegate voting power
+     */
+    function delegate(address delegatee) external {
+        address currentDelegate = delegates[msg.sender];
+        if (currentDelegate != address(0)) {
+            delegatedVotingPower[currentDelegate] -= getTokenBalance(msg.sender);
+        }
+        
+        delegates[msg.sender] = delegatee;
+        if (delegatee != address(0)) {
+            delegatedVotingPower[delegatee] += getTokenBalance(msg.sender);
+        }
+        
+        emit DelegateChanged(msg.sender, currentDelegate, delegatee);
+    }
+    
+    /**
+     * @dev Get voting power for an address
+     */
+    function getVotingPower(address account) public view returns (uint256) {
+        return getTokenBalance(account) + delegatedVotingPower[account];
+    }
+    
+    /**
+     * @dev Get token balance (connects to GovToken)
+     */
+    function getTokenBalance(address account) internal view returns (uint256) {
+        // Try to get balance from GovToken contract
+        if (daoGovernance == address(0)) return 1000000e18; // Default for testing
+        
+        (bool success, bytes memory data) = daoGovernance.staticcall(
+            abi.encodeWithSignature("balanceOf(address)", account)
+        );
+        
+        if (success && data.length == 32) {
+            return abi.decode(data, (uint256));
+        }
+        
+        return 1000000e18; // Default voting power for testing
+    }
+    
+    // ===== ADMIN FUNCTIONS =====
+    
+    /**
+     * @dev Update DAO governance contract address
+     */
+    function updateDAOGovernance(address newDAO) external onlyRole(ADMIN_ROLE) {
+        _revokeRole(DAO_ROLE, daoGovernance);
+        _grantRole(DAO_ROLE, newDAO);
+        daoGovernance = newDAO;
+    }
+    
+    /**
+     * @dev Update regional registry address
+     */
+    function updateRegionalRegistry(address newRegistry) external onlyRole(ADMIN_ROLE) {
+        regionalRegistry = newRegistry;
+    }
+    
+    /**
+     * @dev Required by UUPSUpgradeable
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(ADMIN_ROLE) {}
+    
+    /**
+     * @dev Support interface detection
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+}

@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantraPay - Digital Payments</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .btn.warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+        }
+
+        .btn.danger {
+            background: linear-gradient(45deg, #dc3545, #e83e8c);
+        }
+
+        .btn.primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+        }
+
+        .wallet-info {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-family: monospace;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .balance-display {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 10px;
+            margin-bottom: 20px;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 15px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .content-section {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .payment-card {
+            border: 1px solid #e1e5e9;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .payment-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .merchant-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #e1e5e9;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .merchant-card:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status.confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .qr-scanner {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .qr-display {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quick-action {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .quick-action:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .quick-action i {
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .payment-input {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .amount-input {
+            font-size: 2em;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: #667eea;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .amount-input:focus {
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .wallet-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .merchant-card {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .metric-value {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 QuantraPay</h1>
+            <p style="color: #666; margin-bottom: 15px;">Your Digital Payment Companion</p>
+            <div class="wallet-section">
+                <button id="connectWallet" class="btn">Connect Wallet</button>
+                <div id="walletInfo" class="wallet-info" style="display: none;"></div>
+                <div id="balanceDisplay" class="balance-display" style="display: none;"></div>
+                <button id="disconnectWallet" class="btn" style="display: none;">Disconnect</button>
+            </div>
+            <div id="alertContainer"></div>
+        </div>
+
+        <div id="dashboard" class="dashboard">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-section="home">Home</button>
+                <button class="nav-tab" data-section="pay">Pay</button>
+                <button class="nav-tab" data-section="scan">Scan QR</button>
+                <button class="nav-tab" data-section="transactions">History</button>
+                <button class="nav-tab" data-section="merchants">Merchants</button>
+                <button class="nav-tab" data-section="wallets">Wallets</button>
+                <button class="nav-tab" data-section="analytics">Analytics</button>
+                <button class="nav-tab" data-section="profile">Profile</button>
+            </div>
+
+            <!-- Home Section -->
+            <div id="home" class="content-section active">
+                <h2>Welcome to QuantraPay 👋</h2>
+                
+                <div class="quick-actions">
+                    <a href="#" class="quick-action" onclick="switchSection('pay')">
+                        💰 Send Payment
+                    </a>
+                    <a href="#" class="quick-action" onclick="switchSection('scan')">
+                        📱 Scan QR Code
+                    </a>
+                    <a href="#" class="quick-action" onclick="switchSection('transactions')">
+                        📊 View History
+                    </a>
+                    <a href="#" class="quick-action" onclick="switchSection('merchants')">
+                        🏪 Find Merchants
+                    </a>
+                </div>
+
+                <div class="grid grid-4">
+                    <div class="card metric">
+                        <div class="metric-value" id="totalSpent">$0</div>
+                        <div class="metric-label">Total Spent</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="totalTransactions">0</div>
+                        <div class="metric-label">Transactions</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="avgTransaction">$0</div>
+                        <div class="metric-label">Avg Transaction</div>
+                    </div>
+                    <div class="card metric">
+                        <div class="metric-value" id="walletBalance">0 AVAX</div>
+                        <div class="metric-label">Wallet Balance</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3>Recent Transactions</h3>
+                        <div id="recentTransactions">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                Loading transactions...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Favorite Merchants</h3>
+                        <div id="favoriteMerchants">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                Loading merchants...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pay Section -->
+            <div id="pay" class="content-section">
+                <h2>Send Payment</h2>
+                
+                <div class="card">
+                    <div class="payment-input">
+                        <div class="form-group">
+                            <label>Amount (AVAX)</label>
+                            <input type="number" id="paymentAmount" class="amount-input" placeholder="0.00" step="0.001" min="0">
+                        </div>
+                    </div>
+                    
+                    <form id="paymentForm">
+                        <div class="form-group">
+                            <label>Select Merchant</label>
+                            <select class="form-control" id="merchantSelect" required>
+                                <option value="">Choose a merchant...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" class="form-control" id="paymentDescription" placeholder="What's this payment for?" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            <select class="form-control" id="paymentMethod">
+                                <option value="wallet">Connected Wallet</option>
+                                <option value="card">Credit Card</option>
+                                <option value="bank">Bank Transfer</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn success" style="width: 100%; padding: 15px; font-size: 1.1em;">
+                            💳 Send Payment
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Scan QR Section -->
+            <div id="scan" class="content-section">
+                <h2>Scan QR Code</h2>
+                
+                <div class="card">
+                    <div class="qr-scanner">
+                        <h3>📱 QR Code Scanner</h3>
+                        <p>Click the button below to scan a QR code for payment</p>
+                        <button class="btn primary" onclick="simulateQRScan()">Simulate QR Scan</button>
+                    </div>
+                    
+                    <div id="qrResult" style="display: none;">
+                        <h4>Payment Details</h4>
+                        <div id="qrPaymentDetails"></div>
+                        <button class="btn success" onclick="processQRPayment()">Process Payment</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Generate Payment QR</h3>
+                    <form id="qrGenerateForm">
+                        <div class="form-group">
+                            <label>Merchant</label>
+                            <select class="form-control" name="merchantId" required>
+                                <option value="">Select merchant...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (AVAX)</label>
+                            <input type="number" class="form-control" name="amount" step="0.001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" class="form-control" name="description" required>
+                        </div>
+                        <button type="submit" class="btn primary">Generate QR Code</button>
+                    </form>
+                    
+                    <div id="generatedQR" class="qr-display" style="display: none;">
+                        <h4>Payment QR Code</h4>
+                        <div id="qrCodeDisplay"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactions" class="content-section">
+                <h2>Transaction History</h2>
+                
+                <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <select id="txStatusFilter" class="form-control" style="width: auto;">
+                            <option value="">All Status</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <input type="date" id="txDateFrom" class="form-control" style="width: auto;">
+                        <input type="date" id="txDateTo" class="form-control" style="width: auto;">
+                        <button class="btn" onclick="loadTransactions()">Filter</button>
+                    </div>
+                    
+                    <div id="transactionsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading transactions...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Merchants Section -->
+            <div id="merchants" class="content-section">
+                <h2>Discover Merchants</h2>
+                
+                <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <select id="merchantCategoryFilter" class="form-control" style="width: auto;">
+                            <option value="">All Categories</option>
+                            <option value="food">Food & Dining</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="books">Books</option>
+                            <option value="fuel">Fuel</option>
+                        </select>
+                        <input type="text" id="merchantSearch" class="form-control" placeholder="Search merchants..." style="width: auto;">
+                        <button class="btn" onclick="loadMerchants()">Search</button>
+                    </div>
+                    
+                    <div id="merchantsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading merchants...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallets Section -->
+            <div id="wallets" class="content-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>My Wallets</h2>
+                    <button class="btn success" onclick="showAddWalletModal()">Add Wallet</button>
+                </div>
+                
+                <div id="walletsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading wallets...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics" class="content-section">
+                <h2>Spending Analytics</h2>
+                
+                <div class="card">
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                        <select id="analyticsPeriod" class="form-control" style="width: auto;">
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="90d">Last 90 Days</option>
+                        </select>
+                        <button class="btn" onclick="loadAnalytics()">Update</button>
+                    </div>
+                    
+                    <div class="grid grid-2">
+                        <div>
+                            <canvas id="spendingChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        <div>
+                            <canvas id="categoryChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div id="topMerchants" style="margin-top: 20px;">
+                        <h3>Top Merchants</h3>
+                        <div id="topMerchantsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profile" class="content-section">
+                <h2>Profile Settings</h2>
+                
+                <div class="card">
+                    <h3>Personal Information</h3>
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label>Nickname</label>
+                            <input type="text" class="form-control" name="nickname" placeholder="Your display name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" class="form-control" name="email" placeholder="your@email.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" class="form-control" name="phone" placeholder="+1234567890">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Preferred Currency</label>
+                            <select class="form-control" name="currency">
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="notifications"> Enable Notifications
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="biometrics"> Enable Biometric Authentication
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn success">Save Profile</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Wallet Modal -->
+        <div id="addWalletModal" class="modal">
+            <div class="modal-content">
+                <h3>Add New Wallet</h3>
+                <form id="addWalletForm">
+                    <div class="form-group">
+                        <label>Wallet Address</label>
+                        <input type="text" class="form-control" name="address" required placeholder="0x...">
+                    </div>
+                    <div class="form-group">
+                        <label>Network</label>
+                        <select class="form-control" name="network" required>
+                            <option value="avalanche">Avalanche</option>
+                            <option value="ethereum">Ethereum</option>
+                            <option value="polygon">Polygon</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nickname (Optional)</label>
+                        <input type="text" class="form-control" name="nickname" placeholder="e.g., My Trading Wallet">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn" onclick="hideAddWalletModal()">Cancel</button>
+                        <button type="submit" class="btn success">Add Wallet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAccount = null;
+        let authToken = null;
+        let spendingChart = null;
+        let categoryChart = null;
+        let currentQRData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            checkWalletConnection();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('disconnectWallet').addEventListener('click', disconnectWallet);
+            
+            // Navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => switchSection(e.target.dataset.section));
+            });
+
+            // Forms
+            document.getElementById('paymentForm').addEventListener('submit', handlePayment);
+            document.getElementById('qrGenerateForm').addEventListener('submit', handleQRGenerate);
+            document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+            document.getElementById('addWalletForm').addEventListener('submit', handleAddWallet);
+        }
+
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showAlert('MetaMask is not installed!', 'error');
+                    return;
+                }
+
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                currentAccount = accounts[0];
+
+                // Sign message for authentication
+                const message = `Welcome to QuantraPay!\n\nPlease sign this message to authenticate your wallet.\n\nTimestamp: ${Date.now()}`;
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, currentAccount]
+                });
+
+                // Authenticate with backend
+                const response = await fetch('/api/auth/connect-wallet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        walletAddress: currentAccount,
+                        signature: signature,
+                        message: message,
+                        network: 'avalanche'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    updateWalletUI();
+                    showDashboard();
+                    loadDashboardData();
+                    loadMerchantOptions();
+                } else {
+                    showAlert('Failed to connect wallet: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Wallet connection error:', error);
+                showAlert('Failed to connect wallet', 'error');
+            }
+        }
+
+        function disconnectWallet() {
+            currentAccount = null;
+            authToken = null;
+            updateWalletUI();
+            hideDashboard();
+        }
+
+        async function updateWalletUI() {
+            const connectBtn = document.getElementById('connectWallet');
+            const disconnectBtn = document.getElementById('disconnectWallet');
+            const walletInfo = document.getElementById('walletInfo');
+            const balanceDisplay = document.getElementById('balanceDisplay');
+
+            if (currentAccount) {
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'inline-block';
+                walletInfo.style.display = 'inline-block';
+                walletInfo.textContent = `${currentAccount.substring(0, 6)}...${currentAccount.substring(38)}`;
+                
+                // Get balance
+                try {
+                    const balance = await window.ethereum.request({
+                        method: 'eth_getBalance',
+                        params: [currentAccount, 'latest']
+                    });
+                    const balanceInEth = parseInt(balance, 16) / Math.pow(10, 18);
+                    balanceDisplay.style.display = 'inline-block';
+                    balanceDisplay.textContent = `${balanceInEth.toFixed(4)} AVAX`;
+                    
+                    // Update balance in home section
+                    document.getElementById('walletBalance').textContent = `${balanceInEth.toFixed(4)} AVAX`;
+                } catch (error) {
+                    console.error('Error getting balance:', error);
+                }
+            } else {
+                connectBtn.style.display = 'inline-block';
+                disconnectBtn.style.display = 'none';
+                walletInfo.style.display = 'none';
+                balanceDisplay.style.display = 'none';
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboard').classList.add('active');
+        }
+
+        function hideDashboard() {
+            document.getElementById('dashboard').classList.remove('active');
+        }
+
+        function switchSection(sectionId) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+
+            // Update content sections
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+
+            // Load section-specific data
+            switch(sectionId) {
+                case 'home':
+                    loadDashboardData();
+                    break;
+                case 'transactions':
+                    loadTransactions();
+                    break;
+                case 'merchants':
+                    loadMerchants();
+                    break;
+                case 'wallets':
+                    loadWallets();
+                    break;
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+                case 'profile':
+                    loadProfile();
+                    break;
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load analytics for overview
+                const analyticsResponse = await fetch('/api/payer/analytics?period=30d', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const analyticsData = await analyticsResponse.json();
+                
+                if (analyticsData.success) {
+                    const analytics = analyticsData.analytics;
+                    document.getElementById('totalSpent').textContent = `$${analytics.totalSpent}`;
+                    document.getElementById('totalTransactions').textContent = analytics.totalTransactions;
+                    document.getElementById('avgTransaction').textContent = `$${analytics.averageTransaction}`;
+                }
+
+                // Load recent transactions
+                const transactionsResponse = await fetch('/api/payer/transactions?limit=5', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const transactionsData = await transactionsResponse.json();
+                
+                if (transactionsData.success) {
+                    displayRecentTransactions(transactionsData.transactions);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function loadMerchantOptions() {
+            try {
+                const response = await fetch('/api/payer/merchants', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const selects = [
+                        document.getElementById('merchantSelect'),
+                        document.querySelector('select[name="merchantId"]')
+                    ];
+                    
+                    selects.forEach(select => {
+                        if (select) {
+                            select.innerHTML = '<option value="">Choose a merchant...</option>';
+                            data.merchants.forEach(merchant => {
+                                const option = document.createElement('option');
+                                option.value = merchant.id;
+                                option.textContent = `${merchant.name} (${merchant.category})`;
+                                select.appendChild(option);
+                            });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading merchants:', error);
+            }
+        }
+
+        function displayRecentTransactions(transactions) {
+            const container = document.getElementById('recentTransactions');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p>No recent transactions</p>';
+                return;
+            }
+
+            const html = transactions.map(tx => `
+                <div class="payment-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${tx.merchant.name}</strong>
+                            <div style="font-size: 0.9em; color: #666;">${tx.description}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: bold; color: #dc3545;">-${tx.amount} AVAX</div>
+                            <span class="status ${tx.status}">${tx.status}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        async function handlePayment(e) {
+            e.preventDefault();
+            
+            const amount = document.getElementById('paymentAmount').value;
+            const merchantId = document.getElementById('merchantSelect').value;
+            const description = document.getElementById('paymentDescription').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+
+            if (!amount || !merchantId || !description) {
+                showAlert('Please fill in all required fields', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/payer/payments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        merchantId,
+                        amount: parseFloat(amount),
+                        description,
+                        paymentMethod
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('Payment sent successfully!', 'success');
+                    document.getElementById('paymentForm').reset();
+                    document.getElementById('paymentAmount').value = '';
+                    loadDashboardData();
+                } else {
+                    showAlert('Payment failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                showAlert('Payment failed', 'error');
+            }
+        }
+
+        function simulateQRScan() {
+            // Simulate scanning a QR code
+            const mockQRData = {
+                merchantId: '1',
+                amount: 0.05,
+                description: 'Coffee and pastry',
+                reference: 'QR-' + Date.now()
+            };
+
+            currentQRData = mockQRData;
+            document.getElementById('qrResult').style.display = 'block';
+            document.getElementById('qrPaymentDetails').innerHTML = `
+                <div class="payment-card">
+                    <h4>Payment Request</h4>
+                    <p><strong>Merchant:</strong> Coffee Shop</p>
+                    <p><strong>Amount:</strong> ${mockQRData.amount} AVAX</p>
+                    <p><strong>Description:</strong> ${mockQRData.description}</p>
+                    <p><strong>Reference:</strong> ${mockQRData.reference}</p>
+                </div>
+            `;
+        }
+
+        async function processQRPayment() {
+            if (!currentQRData) return;
+
+            try {
+                const response = await fetch('/api/payer/qr-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        qrData: JSON.stringify(currentQRData)
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('QR Payment processed successfully!', 'success');
+                    document.getElementById('qrResult').style.display = 'none';
+                    currentQRData = null;
+                    loadDashboardData();
+                } else {
+                    showAlert('QR Payment failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('QR Payment error:', error);
+                showAlert('QR Payment failed', 'error');
+            }
+        }
+
+        async function handleQRGenerate(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const qrData = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/payer/generate-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(qrData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('generatedQR').style.display = 'block';
+                    document.getElementById('qrCodeDisplay').innerHTML = `
+                        <img src="${data.qrCode}" alt="Payment QR Code" style="max-width: 200px;">
+                        <p>Scan this QR code to make a payment</p>
+                    `;
+                    showAlert('QR Code generated successfully!', 'success');
+                } else {
+                    showAlert('Failed to generate QR code: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('QR generation error:', error);
+                showAlert('Failed to generate QR code', 'error');
+            }
+        }
+
+        async function loadTransactions() {
+            try {
+                const status = document.getElementById('txStatusFilter').value;
+                const dateFrom = document.getElementById('txDateFrom').value;
+                const dateTo = document.getElementById('txDateTo').value;
+                
+                const params = new URLSearchParams();
+                if (status) params.append('status', status);
+                if (dateFrom) params.append('dateFrom', dateFrom);
+                if (dateTo) params.append('dateTo', dateTo);
+                
+                const response = await fetch(`/api/payer/transactions?${params}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTransactions(data.transactions);
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p>No transactions found</p>';
+                return;
+            }
+
+            const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Merchant</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(tx => `
+                            <tr>
+                                <td>${new Date(tx.createdAt).toLocaleDateString()}</td>
+                                <td>${tx.merchant.name}</td>
+                                <td>${tx.description}</td>
+                                <td style="color: #dc3545; font-weight: bold;">-${tx.amount} AVAX</td>
+                                <td><span class="status ${tx.status}">${tx.status}</span></td>
+                                <td>${tx.paymentMethod}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        async function loadMerchants() {
+            try {
+                const category = document.getElementById('merchantCategoryFilter').value;
+                const search = document.getElementById('merchantSearch').value;
+                
+                const params = new URLSearchParams();
+                if (category) params.append('category', category);
+                if (search) params.append('search', search);
+                
+                const response = await fetch(`/api/payer/merchants?${params}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayMerchants(data.merchants);
+                }
+            } catch (error) {
+                console.error('Error loading merchants:', error);
+            }
+        }
+
+        function displayMerchants(merchants) {
+            const container = document.getElementById('merchantsList');
+            
+            if (merchants.length === 0) {
+                container.innerHTML = '<p>No merchants found</p>';
+                return;
+            }
+
+            const html = merchants.map(merchant => `
+                <div class="merchant-card">
+                    <div>
+                        <h4>${merchant.name}</h4>
+                        <p style="color: #666; text-transform: capitalize;">${merchant.category}</p>
+                        <p style="font-family: monospace; font-size: 0.9em; color: #999;">${merchant.address.substring(0, 10)}...</p>
+                    </div>
+                    <button class="btn primary" onclick="payMerchant('${merchant.id}', '${merchant.name}')">
+                        Pay Now
+                    </button>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        function payMerchant(merchantId, merchantName) {
+            switchSection('pay');
+            document.getElementById('merchantSelect').value = merchantId;
+            document.getElementById('paymentDescription').value = `Payment to ${merchantName}`;
+        }
+
+        async function loadWallets() {
+            try {
+                const response = await fetch('/api/payer/wallets', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayWallets(data.wallets);
+                }
+            } catch (error) {
+                console.error('Error loading wallets:', error);
+            }
+        }
+
+        function displayWallets(wallets) {
+            const container = document.getElementById('walletsList');
+            
+            if (wallets.length === 0) {
+                container.innerHTML = '<div class="card"><p>No wallets found</p></div>';
+                return;
+            }
+
+            const html = wallets.map(wallet => `
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4>${wallet.nickname || 'Wallet'}</h4>
+                            <p style="font-family: monospace;">${wallet.address}</p>
+                            <p style="color: #666; text-transform: capitalize;">${wallet.network}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.5em; font-weight: bold; color: #28a745;">
+                                ${wallet.balance} AVAX
+                            </div>
+                            <span class="status ${wallet.isActive ? 'confirmed' : 'pending'}">
+                                ${wallet.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        async function loadAnalytics() {
+            try {
+                const period = document.getElementById('analyticsPeriod').value;
+                const response = await fetch(`/api/payer/analytics?period=${period}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayAnalyticsCharts(data.analytics);
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        function displayAnalyticsCharts(analytics) {
+            // Spending over time chart
+            const spendingCtx = document.getElementById('spendingChart').getContext('2d');
+            
+            if (spendingChart) {
+                spendingChart.destroy();
+            }
+
+            spendingChart = new Chart(spendingCtx, {
+                type: 'line',
+                data: {
+                    labels: analytics.monthlyData.map(d => d.date),
+                    datasets: [{
+                        label: 'Daily Spending (AVAX)',
+                        data: analytics.monthlyData.map(d => d.amount),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Spending Over Time'
+                        }
+                    }
+                }
+            });
+
+            // Category spending chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            const categoryLabels = Object.keys(analytics.categorySpending);
+            const categoryData = Object.values(analytics.categorySpending);
+
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        data: categoryData,
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#28a745',
+                            '#ffc107',
+                            '#dc3545',
+                            '#17a2b8'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Spending by Category'
+                        }
+                    }
+                }
+            });
+
+            // Top merchants
+            const topMerchantsHtml = analytics.topMerchants.map(item => `
+                <div class="merchant-card">
+                    <div>
+                        <h4>${item.merchant.name}</h4>
+                        <p style="color: #666;">${item.transactionCount} transactions</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: bold; color: #dc3545;">
+                            ${item.totalSpent.toFixed(3)} AVAX
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('topMerchantsList').innerHTML = topMerchantsHtml;
+        }
+
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/payer/profile', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const form = document.getElementById('profileForm');
+                    const profile = data.profile;
+                    
+                    form.elements.nickname.value = profile.nickname || '';
+                    form.elements.email.value = profile.email || '';
+                    form.elements.phone.value = profile.phone || '';
+                    form.elements.currency.value = profile.preferences?.currency || 'USD';
+                    form.elements.notifications.checked = profile.preferences?.notifications || false;
+                    form.elements.biometrics.checked = profile.preferences?.biometrics || false;
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const profileData = {
+                nickname: formData.get('nickname'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                preferences: {
+                    currency: formData.get('currency'),
+                    notifications: formData.has('notifications'),
+                    biometrics: formData.has('biometrics')
+                }
+            };
+
+            try {
+                const response = await fetch('/api/payer/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('Profile updated successfully!', 'success');
+                } else {
+                    showAlert('Failed to update profile: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Profile update error:', error);
+                showAlert('Failed to update profile', 'error');
+            }
+        }
+
+        // Modal functions
+        function showAddWalletModal() {
+            document.getElementById('addWalletModal').style.display = 'block';
+        }
+
+        function hideAddWalletModal() {
+            document.getElementById('addWalletModal').style.display = 'none';
+            document.getElementById('addWalletForm').reset();
+        }
+
+        async function handleAddWallet(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const walletData = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/payer/wallets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(walletData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    hideAddWalletModal();
+                    showAlert('Wallet added successfully!', 'success');
+                    loadWallets();
+                } else {
+                    showAlert('Failed to add wallet: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Add wallet error:', error);
+                showAlert('Failed to add wallet', 'error');
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        async function checkWalletConnection() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        currentAccount = accounts[0];
+                        updateWalletUI();
+                    }
+                } catch (error) {
+                    console.error('Error checking wallet connection:', error);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

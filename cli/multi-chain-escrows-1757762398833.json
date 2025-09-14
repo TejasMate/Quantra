@@ -1,0 +1,55 @@
+{
+  "merchantId": "1",
+  "merchantAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "totalUPIs": 1,
+  "upiEscrows": {
+    "test@upi": {
+      "upiId": "test@upi",
+      "escrows": {
+        "avalanche": {
+          "escrowId": "avalanche-test-upi-1-1757762396932",
+          "contractAddress": "0xabd34B792aC81984ECf29F1Ac266A5DecBd3fCb4",
+          "network": "avalanche-fuji",
+          "token": "AVAX",
+          "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "txHash": "0xf0926d6b80fdf6b32d92a4adad9b522c36e80d4b33ad90d354dc5934cd26c283",
+          "blockNumber": 45966352,
+          "gasUsed": "24352",
+          "deploymentCost": "0.000000000000048704",
+          "status": "deployed",
+          "note": "Avalanche escrow simulation for UPI payment method",
+          "timestamp": "2025-09-13T11:19:56.933Z"
+        },
+        "aptos": {
+          "escrowId": "aptos-test-upi-1-1757762398833",
+          "contractAddress": "0x48279ae5fec3973fc8da56d92fc026bb374011cd6415931aa3f897eaeaa6513d",
+          "network": "aptos-testnet",
+          "token": "APT",
+          "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "fundedBy": "0xf9d57e56266876b07459f919263caf276b07978766ace8e17b65003bd227fea5",
+          "txHash": "0x04936d311ed8374402c623319456554f32f631b77599c0744e12643b0839cc78",
+          "blockHeight": "6862019462",
+          "gasUsed": "18",
+          "gasFeeOctas": "18",
+          "gasFeeAPT": 1.8e-7,
+          "explorerUrl": "https://explorer.aptoslabs.com/txn/0x04936d311ed8374402c623319456554f32f631b77599c0744e12643b0839cc78?network=testnet",
+          "status": "deployed",
+          "note": "Real Aptos escrow account created on testnet",
+          "timestamp": "2025-09-13T11:19:58.832Z"
+        }
+      },
+      "status": "completed"
+    }
+  },
+  "summary": {
+    "avalanche": {
+      "successful": 1,
+      "failed": 0
+    },
+    "aptos": {
+      "successful": 1,
+      "failed": 0
+    }
+  },
+  "timestamp": "2025-09-13T11:19:44.044Z"
+}
